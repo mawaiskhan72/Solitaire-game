@@ -79,28 +79,51 @@ function CenterSolitaire({ onDropCard }) {
 
   const checkForCompletedSequences = () => {
     const updatedFoundationPiles = [...foundationPiles];
-
+  
     // Loop through each slot in the tableau
     centerCardSlots.forEach((cards, slotIndex) => {
       // Check if the slot has a completed sequence
       if (cards.length === 13) {
         const sequence = cards.map(card => getCardValue(card)); // Extract card values
         const isSequenceValid = isSequential(sequence); // Check if sequence is sequential
-
+  
         if (isSequenceValid) {
           // Move the sequence to the foundation pile
           const foundationIndex = findEmptyFoundation(updatedFoundationPiles);
           if (foundationIndex !== -1) {
-            updatedFoundationPiles[foundationIndex] = [...sequence];
-            // Update centerCardSlots to remove the moved cards
-            centerCardSlots[slotIndex] = [];
+            // Spread the sequence if it's in descending order from 0 to 12
+            if (sequence.every((val, index) => parseInt(val) === index)) {
+              const aceToKing = [
+                'Suit=Spades, Number=Ace',
+                'Suit=Spades, Number=2',
+                'Suit=Spades, Number=3',
+                'Suit=Spades, Number=4',
+                'Suit=Spades, Number=5',
+                'Suit=Spades, Number=6',
+                'Suit=Spades, Number=7',
+                'Suit=Spades, Number=8',
+                'Suit=Spades, Number=9',
+                'Suit=Spades, Number=10',
+                'Suit=Spades, Number=Jack',
+                'Suit=Spades, Number=Queen',
+                'Suit=Spades, Number=King',
+              ];
+              updatedFoundationPiles[foundationIndex] = [...aceToKing];
+              // Update centerCardSlots to remove the moved cards
+              centerCardSlots[slotIndex] = [];
+            } else {
+              updatedFoundationPiles[foundationIndex] = [...sequence];
+              // Update centerCardSlots to remove the moved cards
+              centerCardSlots[slotIndex] = [];
+            }
           }
         }
       }
     });
-
+  
     setFoundationPiles(updatedFoundationPiles);
   };
+  
 
   // Utility function to get card value
   const getCardValue = (card) => {
@@ -129,7 +152,7 @@ function CenterSolitaire({ onDropCard }) {
       });
       // Update state with the updated slots
       setCenterCardSlots(updatedCenterCardSlots);
-  
+
       // Update the button text to reflect the adjusted click count
       document.querySelector('.deal-button').innerText = updatedClickCount === 0 ? 'Limit Reached' : `Deal Left: ${updatedClickCount}`;
     }
@@ -137,30 +160,37 @@ function CenterSolitaire({ onDropCard }) {
 
   const handleUndo = () => {
     if (movesHistory.length > 0) {
-      const lastMove = movesHistory.pop();
+      const lastMove = movesHistory[movesHistory.length - 1]; // Get the last move without mutating the array
       const [targetSlotIndex, targetCardIndex] = lastMove.target;
       const [sourceSlotIndex, sourceCardIndex] = lastMove.source;
-
+  
       const updatedCenterCardSlots = [...centerCardSlots];
-
-      // Remove the cards from the target slot
+  
+      // Remove the dragged cards from the target slot and store them
       const draggedCards = updatedCenterCardSlots[targetSlotIndex].splice(targetCardIndex);
-      
-      // Place the dragged cards in the source slot
+  
+      // Remove the last card from the source slot if it's a Redcard2
+      if (sourceCardIndex === updatedCenterCardSlots[sourceSlotIndex].length - 1 && updatedCenterCardSlots[sourceSlotIndex][sourceCardIndex] === Redcard2) {
+        updatedCenterCardSlots[sourceSlotIndex].pop();
+      }
+  
+      // Place the dragged cards back in the source slot
       updatedCenterCardSlots[sourceSlotIndex] = [
-        ...updatedCenterCardSlots[sourceSlotIndex],
+        ...updatedCenterCardSlots[sourceSlotIndex].slice(0, sourceCardIndex),
         ...draggedCards,
+        ...updatedCenterCardSlots[sourceSlotIndex].slice(sourceCardIndex)
       ];
-
+  
       setCenterCardSlots(updatedCenterCardSlots);
-
+  
       // Decrement move counter
       setMoveCount(moveCount - 1);
-
-      // Update move history
-      setMovesHistory([...movesHistory]);
+  
+      // Remove the last move from the history
+      setMovesHistory(movesHistory.slice(0, -1));
     }
   };
+  
 
   const handleReset = () => {
     // Reload the page to reset the game
@@ -180,57 +210,75 @@ function CenterSolitaire({ onDropCard }) {
     setIsPaused(true);
   };
   
-  const handleResume = () => {
-    setIsPaused(false);
-    // Restore the game state from the paused state
-    if (pausedState !== null) {
-      // Only restore the timer state, other state will remain as it is
-      setTimer(pausedState.timer);
-      // If the game was paused, resume the drag-and-drop functionality
-      if (!pausedState.isPaused) {
-        // Restore the event listeners for drag-and-drop
-        const cardElements = document.querySelectorAll('.card');
-        cardElements.forEach(card => {
-          card.addEventListener('dragstart', handleDragStart);
-        });
-      }
+const handleResume = () => {
+  setIsPaused(false); // Set isPaused to false to resume the game
+
+  // Resume the game from where it was paused
+  if (pausedState !== null) {
+    // Restore the timer state
+    setTimer(pausedState.timer);
+
+    // Restore other game state variables
+    setCenterCardSlots(pausedState.centerCardSlots);
+    setClickCount(pausedState.clickCount);
+    setMoveCount(pausedState.moveCount);
+    setMovesHistory(pausedState.movesHistory);
+  }
+
+  // Clear the paused state without resetting it
+  setPausedState(null);
+};
+
+const handleDrop = (event, targetSlotIndex, targetCardIndex) => {
+  event.preventDefault();
+  const draggedCard = event.dataTransfer.getData("card");
+  const updatedCenterCardSlots = [...centerCardSlots];
+  const [sourceSlotIndex, sourceCardIndex] = JSON.parse(event.dataTransfer.getData("source"));
+
+  // Check if the target slot is empty
+  if (updatedCenterCardSlots[targetSlotIndex].length === 0) {
+    // Find the last card in the source stack
+    const lastCardIndex = updatedCenterCardSlots[sourceSlotIndex].length - 1;
+    if (lastCardIndex !== -1) {
+      // Replace the last card with a random spade card
+      const randomIndex = Math.floor(Math.random() * spadeCardImages.length);
+      updatedCenterCardSlots[sourceSlotIndex][lastCardIndex] = spadeCardImages[randomIndex];
     }
-    // Clear the paused state without resetting it
-    setPausedState(null);
-  };
+  }
 
-  const handleDrop = (event, targetSlotIndex, targetCardIndex) => {
-    event.preventDefault();
-    const draggedCard = event.dataTransfer.getData("card");
-    const updatedCenterCardSlots = [...centerCardSlots];
-    const [sourceSlotIndex, sourceCardIndex] = JSON.parse(event.dataTransfer.getData("source"));
+  // Check if the move is valid for each dragged card
+  const draggedCards = updatedCenterCardSlots[sourceSlotIndex].slice(sourceCardIndex);
+  if (isValidMove(draggedCards, targetSlotIndex, targetCardIndex)) {
+    // Remove the dragged cards from the source slot
+    updatedCenterCardSlots[sourceSlotIndex] = updatedCenterCardSlots[sourceSlotIndex].slice(0, sourceCardIndex);
 
-    // Check if the move is valid for each dragged card
-    const draggedCards = updatedCenterCardSlots[sourceSlotIndex].slice(sourceCardIndex);
-    if (isValidMove(draggedCards, targetSlotIndex, targetCardIndex)) {
-      // Remove the dragged cards from the source slot
-      updatedCenterCardSlots[sourceSlotIndex] = updatedCenterCardSlots[sourceSlotIndex].slice(0, sourceCardIndex);
+    // Place the dragged cards in the target slot
+    updatedCenterCardSlots[targetSlotIndex] = [
+      ...updatedCenterCardSlots[targetSlotIndex].slice(0, targetCardIndex),
+      ...draggedCards,
+      ...updatedCenterCardSlots[targetSlotIndex].slice(targetCardIndex),
+    ];
 
-      // Place the dragged cards in the target slot
-      updatedCenterCardSlots[targetSlotIndex] = [
-        ...updatedCenterCardSlots[targetSlotIndex].slice(0, targetCardIndex),
-        ...draggedCards,
-        ...updatedCenterCardSlots[targetSlotIndex].slice(targetCardIndex),
-      ];
+// Replace the last red card in the source stack with a random spade card if necessary
+const redCardIndex = updatedCenterCardSlots[sourceSlotIndex].lastIndexOf(Redcard2);
+if (redCardIndex !== -1) {
+  const randomIndex = Math.floor(Math.random() * spadeCardImages.length);
+  updatedCenterCardSlots[sourceSlotIndex][redCardIndex] = spadeCardImages[randomIndex];
+}
 
-      setCenterCardSlots(updatedCenterCardSlots);
+setCenterCardSlots(updatedCenterCardSlots);
 
-      // Adjust margin top of the dropped cards
-      event.target.style.marginTop = `${15 * targetCardIndex}px`;
 
-      // Increment move counter
-      setMoveCount(moveCount + 1);
+    // Adjust margin top of the dropped cards
+    event.target.style.marginTop = `${15 * targetCardIndex}px`;
 
-      // Add move to history
-      setMovesHistory([...movesHistory, { source: [sourceSlotIndex, sourceCardIndex], target: [targetSlotIndex, targetCardIndex] }]);
-    }
-  };
+    // Increment move counter
+    setMoveCount(moveCount + 1);
 
+    // Add move to history
+    setMovesHistory([...movesHistory, { source: [sourceSlotIndex, sourceCardIndex], target: [targetSlotIndex, targetCardIndex] }]);
+  }
+};
 
   const isValidMove = (draggedCards, targetSlotIndex, targetCardIndex) => {
     // If the target slot is empty, only accept a King or Ace
