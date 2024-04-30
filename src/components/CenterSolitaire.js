@@ -79,51 +79,28 @@ function CenterSolitaire({ onDropCard }) {
 
   const checkForCompletedSequences = () => {
     const updatedFoundationPiles = [...foundationPiles];
-  
+
     // Loop through each slot in the tableau
     centerCardSlots.forEach((cards, slotIndex) => {
       // Check if the slot has a completed sequence
       if (cards.length === 13) {
         const sequence = cards.map(card => getCardValue(card)); // Extract card values
         const isSequenceValid = isSequential(sequence); // Check if sequence is sequential
-  
+
         if (isSequenceValid) {
           // Move the sequence to the foundation pile
           const foundationIndex = findEmptyFoundation(updatedFoundationPiles);
           if (foundationIndex !== -1) {
-            // Spread the sequence if it's in descending order from 0 to 12
-            if (sequence.every((val, index) => parseInt(val) === index)) {
-              const aceToKing = [
-                'Suit=Spades, Number=Ace',
-                'Suit=Spades, Number=2',
-                'Suit=Spades, Number=3',
-                'Suit=Spades, Number=4',
-                'Suit=Spades, Number=5',
-                'Suit=Spades, Number=6',
-                'Suit=Spades, Number=7',
-                'Suit=Spades, Number=8',
-                'Suit=Spades, Number=9',
-                'Suit=Spades, Number=10',
-                'Suit=Spades, Number=Jack',
-                'Suit=Spades, Number=Queen',
-                'Suit=Spades, Number=King',
-              ];
-              updatedFoundationPiles[foundationIndex] = [...aceToKing];
-              // Update centerCardSlots to remove the moved cards
-              centerCardSlots[slotIndex] = [];
-            } else {
-              updatedFoundationPiles[foundationIndex] = [...sequence];
-              // Update centerCardSlots to remove the moved cards
-              centerCardSlots[slotIndex] = [];
-            }
+            updatedFoundationPiles[foundationIndex] = [...sequence];
+            // Update centerCardSlots to remove the moved cards
+            centerCardSlots[slotIndex] = [];
           }
         }
       }
     });
-  
+
     setFoundationPiles(updatedFoundationPiles);
   };
-  
 
   // Utility function to get card value
   const getCardValue = (card) => {
@@ -210,24 +187,24 @@ function CenterSolitaire({ onDropCard }) {
     setIsPaused(true);
   };
   
-const handleResume = () => {
-  setIsPaused(false); // Set isPaused to false to resume the game
-
-  // Resume the game from where it was paused
-  if (pausedState !== null) {
-    // Restore the timer state
-    setTimer(pausedState.timer);
-
-    // Restore other game state variables
-    setCenterCardSlots(pausedState.centerCardSlots);
-    setClickCount(pausedState.clickCount);
-    setMoveCount(pausedState.moveCount);
-    setMovesHistory(pausedState.movesHistory);
-  }
-
-  // Clear the paused state without resetting it
-  setPausedState(null);
-};
+  const handleResume = () => {
+    setIsPaused(false);
+    // Restore the game state from the paused state
+    if (pausedState !== null) {
+      // Only restore the timer state, other state will remain as it is
+      setTimer(pausedState.timer);
+      // If the game was paused, resume the drag-and-drop functionality
+      if (!pausedState.isPaused) {
+        // Restore the event listeners for drag-and-drop
+        const cardElements = document.querySelectorAll('.card');
+        cardElements.forEach(card => {
+          card.addEventListener('dragstart', handleDragStart);
+        });
+      }
+    }
+    // Clear the paused state without resetting it
+    setPausedState(null);
+  };
 
 const handleDrop = (event, targetSlotIndex, targetCardIndex) => {
   event.preventDefault();
@@ -325,11 +302,11 @@ setCenterCardSlots(updatedCenterCardSlots);
         <div className="mt-1 text-white">Moves: {moveCount}</div>
         <button className='border bg-blue-500 text-white w-[70px]' onClick={handleUndo}>Undo</button>
         <button className='border bg-red-500 text-white w-[70px] mt-2' onClick={handleReset}>Restart</button>
-        {isPaused ? (
+        {/* {isPaused ? (
           <button className='border bg-yellow-500 text-white w-[70px] mt-2' onClick={handleResume}>Resume</button>
         ) : (
           <button className='border bg-gray-500 text-white w-[70px] mt-2' onClick={handlePause}>Pause</button>
-        )}
+        )} */}
         <div className="text-white">Time: {`${timer.minutes.toString().padStart(2, '0')}:${timer.seconds.toString().padStart(2, '0')}`}</div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', alignItems: 'flex-start' }}>
