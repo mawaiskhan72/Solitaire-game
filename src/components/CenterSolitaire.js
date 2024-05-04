@@ -437,7 +437,7 @@
           )} */}
           <div className='text-white'>Time: {`${timer.minutes.toString().padStart(2, '0')}:${timer.seconds.toString().padStart(2, '0')}`}</div>
         </div>
-        <div className='cursor-pointer' style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', alignItems: 'flex-start',}}>
+        <div className='cursor-grabbing ' style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', alignItems: 'flex-start',}}>
           {centerCardSlots.map((cards, slotIndex) => (
             <div
               key={slotIndex}
