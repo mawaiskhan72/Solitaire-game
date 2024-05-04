@@ -437,7 +437,7 @@
           )} */}
           <div className='text-white'>Time: {`${timer.minutes.toString().padStart(2, '0')}:${timer.seconds.toString().padStart(2, '0')}`}</div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', alignItems: 'flex-start' }}>
+        <div className='cursor-pointer' style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', alignItems: 'flex-start',}}>
           {centerCardSlots.map((cards, slotIndex) => (
             <div
               key={slotIndex}
@@ -492,7 +492,7 @@
               ) : (
                 <div style={{ width: '100%', height: '100%', borderRadius: '10px', backgroundColor: 'lightgrey' }}></div>
               )}
-            </div>
+            </div>  
           ))}
         </div>  
         {!difficultySelected && ( // Render difficulty buttons if a difficulty has not been selected
