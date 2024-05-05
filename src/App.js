@@ -12,8 +12,8 @@ function App() {
 
   return (
     <div className="App">
-      <div className="flex justify-center items-center h-screen">
-        <div className="bg-[#1e5074]" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+      <div className="flex justify-center items-center  overflow-hidden">
+        <div className="" style={{  display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
           <CenterSolitaire onDropCard={incrementMoveCounter} />
         </div>
       </div>
