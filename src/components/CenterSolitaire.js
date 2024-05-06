@@ -29,15 +29,13 @@ function CenterSolitaire({ onDropCard }) {
   const [timer, setTimer] = useState({ minutes: 15, seconds: 60 });
   const [isPaused, setIsPaused] = useState(false);
   const [pausedState, setPausedState] = useState(null);
-  const [foundationPiles, setFoundationPiles] = useState([[], [], [], []]); // State for foundation piles
-  const [difficultySelected, setDifficultySelected] = useState(false); // State to track if a difficulty has been selected
+  const [foundationPiles, setFoundationPiles] = useState([[], [], [],]); 
+  const [difficultySelected, setDifficultySelected] = useState(false); 
   const [isCelebrating, setIsCelebrating] = useState(false);
 
   useEffect(() => {
-    // Initialize slots with four Redcard2 images each
     const initialSlots = Array.from({ length: 10 }, () =>
       Array.from({ length: 5 }, (_, index) => {
-        // For the 5th card, select a random spades card image
         if (index === 4) {
           const randomIndex = Math.floor(
             Math.random() * spadeCardImages.length
@@ -60,21 +58,17 @@ function CenterSolitaire({ onDropCard }) {
           updatedMinutes -= 1;
         }
 
-        // If the timer is about to reach 0 minutes and 1 second, stop the timer
         if (updatedMinutes === 0 && updatedSeconds === 0) {
           clearInterval(intervalId);
         }
-
         return { minutes: updatedMinutes, seconds: updatedSeconds };
       });
-    }, 1000); // Update every 1000 milliseconds (1 second)
+    }, 1000);
 
-    // Clear interval on component unmount or when timer reaches 0 minutes and 0 seconds
     return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
-    // If the game was paused, restore the paused state
     if (pausedState !== null) {
       setCenterCardSlots(pausedState.centerCardSlots);
       setClickCount(pausedState.clickCount);
@@ -85,7 +79,6 @@ function CenterSolitaire({ onDropCard }) {
   }, [pausedState]);
 
   useEffect(() => {
-    // Check for completed sequences when centerCardSlots changes
     checkForCompletedSequences();
   }, [centerCardSlots]);
 
@@ -97,49 +90,31 @@ function CenterSolitaire({ onDropCard }) {
     return array;
   }
 
-  // Initialize an array to hold all card images
   let allCardImages = [];
 
-  // Populate the array with each card image four times
   spadeCardImages.forEach((cardImage) => {
     allCardImages.push(cardImage, cardImage, cardImage, cardImage);
   });
 
-  // Calculate the number of remaining slots needed to reach 100 cards
   const remainingSlots = 100 - allCardImages.length;
 
-  // Fill the remaining slots with random spade card images
   for (let i = 0; i < remainingSlots; i++) {
     const randomIndex = Math.floor(Math.random() * spadeCardImages.length);
     allCardImages.push(spadeCardImages[randomIndex]);
   }
-
-  // Shuffle the array to randomize the card order
   allCardImages = shuffleArray(allCardImages);
-
-  // Now allCardImages contains 100 cards with each card appearing at least four times
-
-  // const getCardValue = (card) => {
-  //   console.log('Card split response:', card?.split('=')[2]?.split('.')[0]?.split(',')[1]);
-  //   console.log(card , "--cards") // Add this line to log the card value
-  //   return card?.split('=')[2]?.split('.')[0]?.split(',')[1];
-  // };
-
   const getCardValue = (card) => {
-    // Define the regex pattern to match the value part of the card string
     const regexPattern = /Suit=\w+, Number=(\w+)/;
-    // Use match method with the regex pattern to extract the value
     const matchResult = card.match(regexPattern);
 
     if (matchResult && matchResult.length >= 2) {
-      // Extracted value will be in the second captured group
       const value = matchResult[1];
       console.log("Card split response:", value);
-      console.log(card, "--cards"); // Log the original card value
-      return value; // Return the extracted value
+      console.log(card, "--cards");
+      return value;
     } else {
-      console.log("Invalid card format:", card); // Log if the card format is invalid
-      return null; // Return null if the card format is invalid
+      console.log("Invalid card format:", card);
+      return null; 
     }
   };
 
@@ -171,22 +146,19 @@ function CenterSolitaire({ onDropCard }) {
     return true;
   };
 
-  // Utility function to find an empty foundation pile
   const findEmptyFoundation = (foundationPiles) => {
     return foundationPiles.findIndex((pile) => pile.length === 0);
   };
 
   const generateRandomCards = () => {
     if (clickCount < 5) {
-      const updatedClickCount = 5 - clickCount; // Adjusted click count
+      const updatedClickCount = 5 - clickCount;
       setClickCount(clickCount + 1);
 
-      // Create a set to store the indexes of cards already dealt in this deal
       const dealtIndexes = new Set();
 
       const updatedCenterCardSlots = centerCardSlots.map((slot) => {
         const newSlot = [...slot];
-        // Loop until a unique card index is found for this slot
         while (true) {
           const randomNumber = Math.floor(
             Math.random() * spadeCardImages.length
@@ -200,10 +172,8 @@ function CenterSolitaire({ onDropCard }) {
         return newSlot;
       });
 
-      // Update state with the updated slots
       setCenterCardSlots(updatedCenterCardSlots);
 
-      // Update the button text to reflect the adjusted click count
       document.querySelector(".deal-button").innerText =
         updatedClickCount === 0
           ? "Limit Reached"
@@ -211,75 +181,69 @@ function CenterSolitaire({ onDropCard }) {
     }
   };
 
+
   const handleUndo = () => {
     if (movesHistory.length > 0) {
       const lastMove = movesHistory[movesHistory.length - 1];
       const [targetSlotIndex, targetCardIndex] = lastMove.target;
       const [sourceSlotIndex, sourceCardIndex] = lastMove.source;
-
+  
       const updatedCenterCardSlots = [...centerCardSlots];
-
-      const draggedCards =
-        updatedCenterCardSlots[targetSlotIndex]?.splice(targetCardIndex);
-
-      if (
-        sourceCardIndex ===
-          updatedCenterCardSlots[sourceSlotIndex].length - 1 &&
-        updatedCenterCardSlots[sourceSlotIndex][sourceCardIndex] === Redcard2
-      ) {
-        updatedCenterCardSlots[sourceSlotIndex].pop();
+  
+      // Retrieve the dragged cards
+      const draggedCards = updatedCenterCardSlots[targetSlotIndex].splice(targetCardIndex);
+  
+      // Check if the last move involved a red card being dragged and replaced
+      const wasRedCardReplaced = draggedCards.includes(Redcard2);
+  
+      // If the last move involved replacing a red card, revert it back to Redcard2
+      if (wasRedCardReplaced) {
+        updatedCenterCardSlots[sourceSlotIndex][sourceCardIndex - 1] = Redcard2;
       }
-
+  
+      // Move the dragged cards back to their original position
       updatedCenterCardSlots[sourceSlotIndex] = [
         ...updatedCenterCardSlots[sourceSlotIndex].slice(0, sourceCardIndex),
         ...draggedCards,
         ...updatedCenterCardSlots[sourceSlotIndex].slice(sourceCardIndex),
       ];
-
+  
+      // Update the state with the reverted move
       setCenterCardSlots(updatedCenterCardSlots);
-
-      // Decrement move counter
       setMoveCount(moveCount - 1);
-
-      // Remove the last move from the history
       setMovesHistory(movesHistory.slice(0, -1));
     }
   };
+  
+
+  
 
   const handleReset = () => {
-    // Reload the page to reset the game
     window.location.reload();
   };
 
   const handlePause = () => {
-    // Pause the game by setting isPaused to true and storing the current state
     setPausedState({
       centerCardSlots,
       clickCount,
       moveCount,
       movesHistory,
       timer,
-      isPaused: true, // Also store the paused state
+      isPaused: true,
     });
     setIsPaused(true);
   };
 
   const handleResume = () => {
-    setIsPaused(false); // Set isPaused to false to resume the game
+    setIsPaused(false);
 
-    // Restore the game state from the paused state
     if (pausedState !== null) {
-      // Restore the timer state
       setTimer(pausedState.timer);
-
-      // Restore other game state variables
       setCenterCardSlots(pausedState.centerCardSlots);
       setClickCount(pausedState.clickCount);
       setMoveCount(pausedState.moveCount);
       setMovesHistory(pausedState.movesHistory);
     }
-
-    // Clear the paused state without resetting it
     setPausedState(null);
   };
 
@@ -291,19 +255,12 @@ function CenterSolitaire({ onDropCard }) {
       event.dataTransfer.getData("source")
     );
 
-    // Check if the target slot is empty
     if (updatedCenterCardSlots[targetSlotIndex].length === 0) {
-      // Check if the dragged card is a random card in sequence form
       if (isRandomCardInSequence(draggedCard)) {
-        // Move the card to the target slot
         updatedCenterCardSlots[targetSlotIndex] = [draggedCard];
-        // Remove the card from the source slot
-        updatedCenterCardSlots[sourceSlotIndex].splice(sourceCardIndex, 1);
-        // Update state with the updated slots
+        updatedCenterCardSlots[sourceSlotIndex].splice(sourceCardIndex, 1)
         setCenterCardSlots(updatedCenterCardSlots);
-        // Increment move counter
         setMoveCount(moveCount + 1);
-        // Add move to history
         setMovesHistory([
           ...movesHistory,
           {
@@ -312,38 +269,32 @@ function CenterSolitaire({ onDropCard }) {
           },
         ]);
       } else {
-        // Random card in sequence form is required on an empty stack
         console.log(
           "Cannot drop a non-random card or card not in sequence form onto an empty stack"
         );
       }
     } else {
-      // If the target slot is not empty, proceed with the regular drop logic
-      // Check if the move is valid for each dragged card
+
       const draggedCards =
         updatedCenterCardSlots[sourceSlotIndex].slice(sourceCardIndex);
       if (isValidMove(draggedCards, targetSlotIndex, targetCardIndex)) {
-        // Store the number of cards before the drop
+
         const numCardsBeforeDrop =
           updatedCenterCardSlots[targetSlotIndex].length;
 
-        // Remove the dragged cards from the source slot
         updatedCenterCardSlots[sourceSlotIndex] = updatedCenterCardSlots[
           sourceSlotIndex
         ].slice(0, sourceCardIndex);
 
-        // Place the dragged cards in the target slot
         updatedCenterCardSlots[targetSlotIndex] = [
           ...updatedCenterCardSlots[targetSlotIndex].slice(0, targetCardIndex),
           ...draggedCards,
           ...updatedCenterCardSlots[targetSlotIndex].slice(targetCardIndex),
         ];
 
-        // Store the number of cards after the drop
         const numCardsAfterDrop =
           updatedCenterCardSlots[targetSlotIndex].length;
 
-        // Check if the last card before and after the drop is a red card
         const isLastCardRedBefore =
           updatedCenterCardSlots[sourceSlotIndex][sourceCardIndex - 1] ===
           Redcard2;
@@ -351,7 +302,6 @@ function CenterSolitaire({ onDropCard }) {
           updatedCenterCardSlots[targetSlotIndex][targetCardIndex - 1] ===
           Redcard2;
 
-        // If the last card before the drop is red and the last card after the drop is not red, swap it with a random spade card
         if (isLastCardRedBefore && !isLastCardRedAfter) {
           const randomIndex = Math.floor(
             Math.random() * spadeCardImages.length
@@ -362,13 +312,11 @@ function CenterSolitaire({ onDropCard }) {
 
         setCenterCardSlots(updatedCenterCardSlots);
 
-        // Adjust margin top of the dropped cards
         event.target.style.marginTop = `${15 * targetCardIndex}px`;
 
         // Increment move counter
         setMoveCount(moveCount + 1);
 
-        // Add move to history
         setMovesHistory([
           ...movesHistory,
           {
@@ -380,10 +328,8 @@ function CenterSolitaire({ onDropCard }) {
     }
   };
 
-  // Function to check if a card is a random card in sequence form
   const isRandomCardInSequence = (card) => {
     const cardValue = getCardValue(card);
-    // Define the sequence of values in descending order
     const sequence = [
       "King",
       "Queen",
@@ -399,19 +345,17 @@ function CenterSolitaire({ onDropCard }) {
       "2",
       "Ace",
     ];
-    // Check if the card value is in the sequence
     return sequence.includes(cardValue);
   };
 
   const isValidMove = (draggedCards, targetSlotIndex, targetCardIndex) => {
-    // If the target slot is empty, only accept a King or Ace
     if (targetCardIndex === 0) {
       return (
         draggedCards.length === 1 &&
         (draggedCards[0].includes("King") || draggedCards[0].includes("Ace"))
       );
     } else {
-      // Get the value and suit of the card on top of the target slot
+
       const [topCardValue, topCardSuit] = centerCardSlots[targetSlotIndex][
         targetCardIndex - 1
       ]
@@ -419,13 +363,11 @@ function CenterSolitaire({ onDropCard }) {
         ?.split(".")[0]
         ?.split(",");
 
-      // Get the value and suit of the dragged card(s)
       const [draggedCardValue, draggedCardSuit] = draggedCards[0]
         ?.split("=")[2]
         ?.split(".")[0]
         ?.split(",");
 
-      // Check if the dragged card(s) can be placed on top of the target card according to solitaire rules
       const sequence = [
         "Ace",
         "2",
@@ -442,7 +384,6 @@ function CenterSolitaire({ onDropCard }) {
         "King",
       ];
 
-      // Check if the dragged cards form a descending order sequence
       const isDescendingOrder = draggedCards.every(
         (card, index) =>
           sequence.indexOf(card.split("=")[2]?.split(".")[0]?.split(",")[0]) ===
@@ -453,20 +394,18 @@ function CenterSolitaire({ onDropCard }) {
       );
 
       return (
-        // Check if the dragged card(s) form a valid sequence according to solitaire rules
-        (isDescendingOrder && // Check if cards are in descending order
+        (isDescendingOrder && 
           sequence.includes(draggedCardValue) &&
           sequence.includes(topCardValue) &&
           sequence.indexOf(draggedCardValue) ===
             sequence.indexOf(topCardValue) - 1) ||
-        // Check if the dragged card(s) form a pair
+
         (draggedCards.length === 2 &&
           draggedCards.every(
             (card) =>
               card.split("=")[2]?.split(".")[0]?.split(",")[0] ===
               draggedCards[0].split("=")[2]?.split(".")[0]?.split(",")[0]
           )) ||
-        // Check if a single card is being dragged
         (draggedCards.length === 1 &&
           !isDescendingOrder &&
           sequence.indexOf(draggedCardValue) ===
@@ -480,9 +419,7 @@ function CenterSolitaire({ onDropCard }) {
   };
 
   const handleDragStart = (event, card, sourceSlotIndex, sourceCardIndex) => {
-    // Check if the timer has expired
     if (timer.minutes === 0 && timer.seconds === 0) {
-      // Timer has expired, prevent dragging
       event.preventDefault();
       return;
     }
@@ -498,7 +435,6 @@ function CenterSolitaire({ onDropCard }) {
     const updatedFoundationPiles = [...foundationPiles];
 
     centerCardSlots.forEach((cards, slotIndex) => {
-      // Extract card values for all cards in the stack
       const sequence = cards.map((card) => getCardValue(card));
 
       if (
@@ -507,11 +443,9 @@ function CenterSolitaire({ onDropCard }) {
         sequence[0] === "King" &&
         sequence[12] === "Ace"
       ) {
-        // Move all cards in the stack to the foundation pile
         const foundationIndex = findEmptyFoundation(updatedFoundationPiles);
         if (foundationIndex !== -1) {
           updatedFoundationPiles[foundationIndex].push(...cards);
-          // Update centerCardSlots to remove the moved cards
           centerCardSlots[slotIndex] = [];
         }
       } else {
@@ -537,25 +471,23 @@ function CenterSolitaire({ onDropCard }) {
 
     setFoundationPiles(updatedFoundationPiles);
   };
-
   useEffect(() => {
-    if (!difficultySelected) return; // Do nothing if difficulty is not selected
+    if (!difficultySelected) return; 
 
     let targetFilledPilesCount;
     switch (foundationPiles.length) {
-      case 1: // Easy mode
+      case 1:
         targetFilledPilesCount = 1;
         break;
-      case 2: // Medium mode
+      case 2:
         targetFilledPilesCount = 2;
         break;
-      case 4: // Hard mode
+      case 4:
         targetFilledPilesCount = 3;
         break;
       default:
         targetFilledPilesCount = 0;
     }
-
     const filledPilesCount = foundationPiles.filter(pile => pile.length > 0).length;
     console.log(filledPilesCount, "--------->fouhkhkjhndation ");
     
@@ -565,7 +497,6 @@ function CenterSolitaire({ onDropCard }) {
   }, [foundationPiles, difficultySelected]);
 
   const handleDifficultySelect = (difficulty) => {
-    // Set the difficulty selected state to true
     setDifficultySelected(true);
 
     switch (difficulty) {
@@ -586,7 +517,7 @@ function CenterSolitaire({ onDropCard }) {
     if (isCelebrating) {
       const celebrationTimeout = setTimeout(() => {
         setIsCelebrating(false);
-      }, 5000); // Adjust the delay as needed
+      }, 5000); 
       return () => clearTimeout(celebrationTimeout);
     }
   }, [isCelebrating]);
@@ -737,7 +668,7 @@ function CenterSolitaire({ onDropCard }) {
               </div>
             ))}
           </div>
-          {!difficultySelected && ( // Render difficulty buttons if a difficulty has not been selected
+          {!difficultySelected && ( 
             <div
               className="difficulty-buttons"
               style={{
@@ -747,7 +678,7 @@ function CenterSolitaire({ onDropCard }) {
                 flexDirection: "column",
                 gap: "10px",
               }}
-            >
+            ><p className="text-white">SELECT DIFFICULTY</p>
               <button
                 className="difficulty-button"
                 onClick={() => handleDifficultySelect("easy")}
@@ -776,7 +707,7 @@ function CenterSolitaire({ onDropCard }) {
               >
                 Medium
               </button>
-              {/* <button
+              <button
                 className="difficulty-button"
                 onClick={() => handleDifficultySelect("hard")}
                 style={{
@@ -789,7 +720,7 @@ function CenterSolitaire({ onDropCard }) {
                 }}
               >
                 Hard
-              </button> */}
+              </button>
             </div>
           )}
         </div>
@@ -798,4 +729,4 @@ function CenterSolitaire({ onDropCard }) {
   );
 }
 
-export default CenterSolitaire;
+export default CenterSolitaire; 
